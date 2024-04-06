@@ -1,22 +1,24 @@
 const express = require("express");
 const Admin = require("../Models/Admin");
+const jwt = require("jsonwebtoken");
 
 async function adminMiddleWare(req, res, next) {
-  const username = req.headers.username;
-  const password = req.headers.password;
+  const token = req.headers.authorization;
+  const words = token.split(" ");
+  const jwtToken = words[1];
   try {
-    const admin = await Admin.findOne({
-      username: username,
-      password: password,
-    });
-    console.log(admin);
-    if (!admin) {
-      res.status(404).json({ msg: "You cannot access protected routes" });
-      return;
+    const decodedValue = jwt.verify(jwtToken, process.env.JWT_PASS);
+    if (decodedValue.username) {
+      next();
+    } else {
+      res.status(403).json({
+        msg: "You are not authenticated",
+      });
     }
-    next();
-  } catch (error) {
-    res.status(400).json({ msg: "Something went wrong" });
+  } catch (e) {
+    res.json({
+      msg: "Incorrect inputs",
+    });
   }
 }
 module.exports = adminMiddleWare;
